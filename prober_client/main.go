@@ -14,7 +14,7 @@ import (
 var (
 	addr = flag.String("addr", "localhost:50051", "the address to connect to")
 	url  = flag.String("endpoint", "https://google.com", "the url to make request to")
-	n    = flag.Int("n", 5, "the number of requests to be made")
+	n    = flag.Int("n", 500, "the number of requests to be made")
 )
 
 func main() {
