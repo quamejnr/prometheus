@@ -49,20 +49,21 @@ func (s *server) DoProbes(ctx context.Context, in *pb.ProbeRequest) (*pb.ProbeRe
 		}
 		if resp.StatusCode == 200 {
 			n += 1.0
-			elapsed := time.Since(start)
-			elapsedMsecs := float32(elapsed / time.Millisecond)
-			sum += elapsedMsecs
-			log.Info(fmt.Sprintf("Response time: %vms", elapsedMsecs))
-
 		}
+
+		elapsed := time.Since(start)
+		elapsedMsecs := float32(elapsed / time.Millisecond)
+		sum += elapsedMsecs
+
+		log.Info(fmt.Sprintf("Response time: %vms", elapsedMsecs))
+
+		recordLatency(in.GetEndpoint(), float64(elapsed.Milliseconds()))
 	}
 
 	averageElapsedMsecs := sum / n
 	if math.IsNaN(float64(averageElapsedMsecs)) {
 		averageElapsedMsecs = 0
 	}
-
-	recordLatency(in.GetEndpoint(), float64(averageElapsedMsecs))
 
 	return &pb.ProbeReply{AvgLatencyMsecs: averageElapsedMsecs}, nil
 }
@@ -89,15 +90,15 @@ func main() {
 }
 
 func recordLatency(label string, value float64) {
-	latency.WithLabelValues(label).Set(value)
-
+	latency.WithLabelValues(label).Observe(value)
 }
 
 var (
-	latency = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	latency = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "latency",
 		Name:      "client_requests_ms",
 		Help:      "The average latency of client's requests",
+		Buckets:   []float64{50, 100, 150, 200, 250, 300, 350, 400, 450, 500},
 	},
 		[]string{"request_url"})
 )
